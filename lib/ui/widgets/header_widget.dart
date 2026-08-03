@@ -4,10 +4,12 @@ import '../theme/jarvis_theme.dart';
 
 class HeaderWidget extends StatelessWidget {
   final AssistantState state;
+  final VoidCallback? onSettingsTap;
 
   const HeaderWidget({
     super.key,
     required this.state,
+    this.onSettingsTap,
   });
 
   @override
@@ -29,7 +31,7 @@ class HeaderWidget extends StatelessWidget {
         statusColor = JarvisTheme.amberWarning;
         break;
       case AssistantState.speaking:
-        statusText = '● RESPONDING';
+        statusText = '● SPEAKING';
         statusColor = JarvisTheme.blueAccent;
         break;
       case AssistantState.error:
@@ -61,9 +63,9 @@ class HeaderWidget extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              Text(
+              const Text(
                 'JARVIS',
-                style: const TextStyle(
+                style: TextStyle(
                   color: JarvisTheme.textPrimary,
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -72,25 +74,41 @@ class HeaderWidget extends StatelessWidget {
               ),
             ],
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: statusColor.withValues(alpha: 0.3),
-                width: 1,
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: statusColor.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  statusText,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.5,
+                  ),
+                ),
               ),
-            ),
-            child: Text(
-              statusText,
-              style: TextStyle(
-                color: statusColor,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.5,
-              ),
-            ),
+              if (onSettingsTap != null) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: onSettingsTap,
+                  icon: const Icon(
+                    Icons.settings_outlined,
+                    color: JarvisTheme.textSecondary,
+                    size: 20,
+                  ),
+                  tooltip: 'API Key Settings',
+                ),
+              ],
+            ],
           ),
         ],
       ),
