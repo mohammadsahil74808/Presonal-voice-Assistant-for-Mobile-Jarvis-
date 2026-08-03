@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/constants/app_constants.dart';
-import '../ui/hud_screen.dart';
+import '../ui/conversational_screen.dart';
 import '../ui/theme/jarvis_theme.dart';
 
 class JarvisApp extends StatelessWidget {
@@ -12,7 +12,7 @@ class JarvisApp extends StatelessWidget {
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
       theme: JarvisTheme.darkTheme,
-      home: const HudScreen(),
+      home: const ConversationalScreen(),
     );
   }
 }
