@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/constants/app_constants.dart';
 import '../ui/hud_screen.dart';
+import '../ui/theme/jarvis_theme.dart';
 
 class JarvisApp extends StatelessWidget {
   const JarvisApp({super.key});
@@ -10,9 +11,7 @@ class JarvisApp extends StatelessWidget {
     return MaterialApp(
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(useMaterial3: true).copyWith(
-        scaffoldBackgroundColor: Colors.black,
-      ),
+      theme: JarvisTheme.darkTheme,
       home: const HudScreen(),
     );
   }
