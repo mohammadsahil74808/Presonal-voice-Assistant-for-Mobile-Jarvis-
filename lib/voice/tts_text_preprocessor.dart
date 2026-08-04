@@ -32,31 +32,25 @@ class TtsTextPreprocessor {
     text = text.replaceAll(RegExp(r'^\s*[\*\-\+]\s+', multiLine: true), '');
     text = text.replaceAll(RegExp(r'^\s*\d+\.\s+', multiLine: true), '');
 
-    // 7. Convert repetitive ellipses or trailing periods (...) into a natural conversational pause (soft comma)
-    text = text.replaceAll(RegExp(r'\.{2,}'), ', ');
+    // 7. Convert repetitive ellipses or trailing periods (...) into a single period
+    text = text.replaceAll(RegExp(r'\.{2,}'), '. ');
 
-    // 8. Convert disruptive structural punctuation (colons, semicolons, dashes, brackets, pipes) into soft conversational pauses
-    text = text.replaceAll(RegExp(r'[\:\;\-\–\—\(\)\[\]\|\{\}]'), ', ');
+    // 8. Convert disruptive structural punctuation (colons, semicolons, dashes, brackets, pipes) into smooth spaces instead of heavy pause commas
+    text = text.replaceAll(RegExp(r'[\:\;\-\–\—\(\)\[\]\|\{\}]'), ' ');
 
     // 9. Remove technical markup symbols and stray characters that trigger vocal stutters
     text = text.replaceAll(RegExp(r'[\~\#\^\_\`\\<\>\|\@\%\$\&]'), ' ');
     text = text.replaceAll('**', ' ');
     text = text.replaceAll('*', ' ');
 
-    // 10. Smooth out line breaks and multiple newlines into conversational breath pauses
-    text = text.replaceAll(RegExp(r'\n+'), ', ');
+    // 10. Smooth out line breaks and multiple newlines into clean single spaces
+    text = text.replaceAll(RegExp(r'\n+'), ' ');
 
-    // 11. Clean repetitive consecutive punctuation and normalize whitespace
-    text = text.replaceAll(RegExp(r'[\,\s]{2,}'), ', ');
-    text = text.replaceAll(RegExp(r'\,\s*\.'), '. ');
-    text = text.replaceAll(RegExp(r'\.\s*\,'), '. ');
+    // 11. Normalize multiple commas and spaces into a single space/comma for seamless 0.1s micro-pauses
+    text = text.replaceAll(RegExp(r'\,{2,}'), ',');
+    text = text.replaceAll(RegExp(r'\s*\,\s*'), ' '); // Remove comma pauses inside clauses for continuous voice flow
     text = text.replaceAll(RegExp(r'\s+'), ' ');
 
-    // Trim trailing or leading orphaned commas
-    text = text.trim();
-    if (text.startsWith(',')) text = text.substring(1).trim();
-    if (text.endsWith(',')) text = text.substring(0, text.length - 1).trim();
-
-    return text;
+    return text.trim();
   }
 }

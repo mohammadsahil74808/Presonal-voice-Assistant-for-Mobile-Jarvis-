@@ -312,12 +312,12 @@ class VoiceManager extends ChangeNotifier {
     });
   }
 
-  /// Helper to find natural sentence or clause breaks for lightning-fast streaming audio onset.
+  /// Helper to find natural sentence breaks for continuous, unbroken audio streaming.
   int _findSentenceBreak(String text) {
     for (int i = 0; i < text.length; i++) {
       final char = text[i];
-      // Trigger instant speech onset as soon as a clause boundary (, . ! ? \n) appears after 8 characters
-      if ((char == ',' || char == '.' || char == '!' || char == '?' || char == '\n') && i >= 8) {
+      // Trigger streaming audio synthesis on complete sentence endings (. ! ? \n) after 25 characters
+      if ((char == '.' || char == '!' || char == '?' || char == '\n') && i >= 25) {
         return i;
       }
     }
