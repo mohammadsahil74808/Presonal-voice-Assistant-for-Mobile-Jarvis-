@@ -138,6 +138,7 @@ class VoiceManager extends ChangeNotifier {
     notifyListeners();
 
     await _speechRecognizer.startListening(
+      languageCode: 'en_IN',
       onResult: (transcript, isFinal) {
         _partialTranscript = transcript;
         notifyListeners();

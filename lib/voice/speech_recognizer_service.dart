@@ -48,7 +48,7 @@ class SpeechRecognizerService {
   Future<void> startListening({
     required Function(String transcript, bool isFinal) onResult,
     required Function(String error) onError,
-    String languageCode = 'en_US',
+    String languageCode = 'en_IN',
   }) async {
     if (!_isInitialized) {
       final ok = await initialize(onError: onError);
@@ -73,7 +73,7 @@ class SpeechRecognizerService {
           listenMode: ListenMode.dictation,
           localeId: languageCode,
           listenFor: const Duration(seconds: 30),
-          pauseFor: const Duration(seconds: 4),
+          pauseFor: const Duration(milliseconds: 2000),
         ),
       );
     } catch (e) {

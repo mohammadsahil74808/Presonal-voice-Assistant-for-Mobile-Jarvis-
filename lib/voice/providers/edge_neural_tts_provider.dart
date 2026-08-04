@@ -5,7 +5,7 @@ import 'package:edge_tts/edge_tts.dart';
 import 'package:flutter/foundation.dart';
 import '../../config/jarvis_voice_config.dart';
 import '../tts_service.dart';
-import '../tts_text_preprocessor.dart';
+import '../tts_ssml_builder.dart';
 import 'android_system_tts_provider.dart';
 
 /// Primary neural Text-To-Speech engine utilizing Microsoft Edge online synthesis.
@@ -86,7 +86,7 @@ class EdgeNeuralTTSProvider implements TTSService {
       await stop();
     }
 
-    final cleanedText = TtsTextPreprocessor.cleanForSpeech(rawText);
+    final cleanedText = TtsSsmlBuilder.formatForSpeech(rawText);
     if (cleanedText.isEmpty) {
       if (onComplete != null && _queue.isEmpty && !_isSpeaking) onComplete();
       return;
@@ -127,7 +127,7 @@ class EdgeNeuralTTSProvider implements TTSService {
       );
 
       // Synthesize with strict timeout to prevent lingering in speaking state during offline network drop
-      final Uint8List mp3Bytes = await communicate.toBytes().timeout(const Duration(seconds: 6));
+      final Uint8List mp3Bytes = await communicate.toBytes().timeout(const Duration(milliseconds: 3500));
       
       if (mp3Bytes.isEmpty) {
         throw Exception('Edge TTS synthesized 0 bytes.');

@@ -11,7 +11,7 @@ class ServiceLocator {
   late final SecureStorageService secureStorage = SecureStorageService();
   late final GeminiConfigService geminiConfigService = GeminiConfigService(secureStorage);
   late final ConversationManager conversationManager = ConversationManager();
-  late final TTSService ttsService = GeminiTTSProvider(apiKeyGetter: () => geminiConfigService.apiKey);
+  late final TTSService ttsService = EdgeNeuralTTSProvider();
 
   bool _initialized = false;
   
