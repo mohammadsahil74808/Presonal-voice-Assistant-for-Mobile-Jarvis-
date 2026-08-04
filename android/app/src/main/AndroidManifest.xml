@@ -36,6 +36,8 @@
 
         <service
             android:name=".JarvisRecognitionService"
+            android:label="JARVIS Voice Recognition"
+            android:permission="android.permission.BIND_RECOGNITION_SERVICE"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.speech.RecognitionService" />
@@ -67,10 +69,15 @@
             <intent-filter>
                 <action android:name="android.intent.action.ASSIST" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.VOICE" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VOICE_COMMAND" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.VOICE" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.service.voice.VoiceInteractionService" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
