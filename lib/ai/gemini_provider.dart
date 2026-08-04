@@ -19,7 +19,7 @@ class GeminiProvider implements AIProvider {
 
   GeminiProvider({
     required this.apiKey,
-    this.modelName = 'gemini-2.0-flash',
+    this.modelName = 'gemini-2.0-flash-lite',
     this.deepModelName = 'gemini-1.5-pro',
   }) {
     _initModel();
@@ -27,20 +27,43 @@ class GeminiProvider implements AIProvider {
 
   void _initModel() {
     final instructions = JarvisSystemInstruction.buildInstruction();
+
+    // Fast conversational engine — tight token cap forces quick, snappy replies
     _defaultModel = GenerativeModel(
       model: modelName,
       apiKey: apiKey,
       systemInstruction: Content.system(instructions),
+      generationConfig: GenerationConfig(
+        temperature: 0.7,
+        maxOutputTokens: 180,
+        topP: 0.9,
+        topK: 32,
+      ),
     );
+
+    // Deep reasoning engine — more room for detailed/coding answers
     _deepModel = GenerativeModel(
       model: deepModelName,
       apiKey: apiKey,
       systemInstruction: Content.system(instructions),
+      generationConfig: GenerationConfig(
+        temperature: 0.7,
+        maxOutputTokens: 1024,
+        topP: 0.95,
+        topK: 40,
+      ),
     );
+
     _backupModel = GenerativeModel(
       model: 'gemini-1.5-flash',
       apiKey: apiKey,
       systemInstruction: Content.system(instructions),
+      generationConfig: GenerationConfig(
+        temperature: 0.7,
+        maxOutputTokens: 180,
+        topP: 0.9,
+        topK: 32,
+      ),
     );
   }
 

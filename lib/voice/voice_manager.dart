@@ -71,7 +71,7 @@ class VoiceManager extends ChangeNotifier {
       key = dotenv.env['GEMINI_API_KEY'];
     }
     if (key != null && key.trim().isNotEmpty && key.trim() != 'YOUR_KEY_HERE') {
-      final model = dotenv.env['GEMINI_MODEL'] ?? 'gemini-2.0-flash';
+      final model = dotenv.env['GEMINI_MODEL'] ?? 'gemini-2.0-flash-lite';
       final deepModel = dotenv.env['GEMINI_DEEP_MODEL'] ?? 'gemini-1.5-pro';
       _aiProvider = GeminiProvider(apiKey: key.trim(), modelName: model, deepModelName: deepModel);
       _configService.updateModel(model);
@@ -316,8 +316,8 @@ class VoiceManager extends ChangeNotifier {
   int _findSentenceBreak(String text) {
     for (int i = 0; i < text.length; i++) {
       final char = text[i];
-      // Trigger streaming audio synthesis on complete sentence endings (. ! ? \n) after 25 characters
-      if ((char == '.' || char == '!' || char == '?' || char == '\n') && i >= 25) {
+      // Trigger streaming audio synthesis on complete sentence endings (. ! ? \n) after 15 characters
+      if ((char == '.' || char == '!' || char == '?' || char == '\n') && i >= 15) {
         return i;
       }
     }
