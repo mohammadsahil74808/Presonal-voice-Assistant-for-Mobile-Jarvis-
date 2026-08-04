@@ -9,6 +9,9 @@ import 'widgets/chat_bubble.dart';
 import 'widgets/header_widget.dart';
 import 'widgets/modern_voice_bar.dart';
 
+import '../services/service_locator.dart';
+import 'widgets/overlay_permission_dialog.dart';
+
 class ConversationalScreen extends StatefulWidget {
   const ConversationalScreen({super.key});
 
@@ -25,6 +28,21 @@ class _ConversationalScreenState extends State<ConversationalScreen> {
   void initState() {
     super.initState();
     _voiceManager = VoiceManager()..addListener(_onVoiceStateChanged);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final systemService = ServiceLocator.instance.systemAssistantService;
+      final hasPermission = await systemService.checkPermission();
+      if (!hasPermission && mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => OverlayPermissionDialog(
+            onOpenSettings: () => systemService.requestOverlayPermission(),
+          ),
+        );
+      } else {
+        await systemService.enableSystemInvocation();
+      }
+    });
   }
 
   void _onVoiceStateChanged() {
