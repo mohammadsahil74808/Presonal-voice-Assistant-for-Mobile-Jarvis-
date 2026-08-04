@@ -30,19 +30,18 @@ class _ConversationalScreenState extends State<ConversationalScreen> {
     _voiceManager = VoiceManager()..addListener(_onVoiceStateChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final systemService = ServiceLocator.instance.systemAssistantService;
-      final hasPermission = await systemService.checkPermission();
-      if (!hasPermission && mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => OverlayPermissionDialog(
-            onOpenSettings: () => systemService.requestOverlayPermission(),
-          ),
-        );
-      } else {
-        await systemService.enableSystemInvocation();
-      }
+      _showAssistantSetupDialog();
     });
+  }
+
+  void _showAssistantSetupDialog() {
+    final systemService = ServiceLocator.instance.systemAssistantService;
+    showDialog(
+      context: context,
+      builder: (context) => OverlayPermissionDialog(
+        onOpenSettings: () => systemService.requestOverlayPermission(),
+      ),
+    );
   }
 
   void _onVoiceStateChanged() {
@@ -105,6 +104,7 @@ class _ConversationalScreenState extends State<ConversationalScreen> {
                 HeaderWidget(
                   state: state,
                   onSettingsTap: _showApiKeyDialog,
+                  onAssistantSetupTap: _showAssistantSetupDialog,
                 ),
 
                 // Subtle Ambient AI Orb Header Core

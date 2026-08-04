@@ -5,11 +5,13 @@ import '../theme/jarvis_theme.dart';
 class HeaderWidget extends StatelessWidget {
   final AssistantState state;
   final VoidCallback? onSettingsTap;
+  final VoidCallback? onAssistantSetupTap;
 
   const HeaderWidget({
     super.key,
     required this.state,
     this.onSettingsTap,
+    this.onAssistantSetupTap,
   });
 
   @override
@@ -96,8 +98,20 @@ class HeaderWidget extends StatelessWidget {
                   ),
                 ),
               ),
+              if (onAssistantSetupTap != null) ...[
+                const SizedBox(width: 4),
+                IconButton(
+                  onPressed: onAssistantSetupTap,
+                  icon: const Icon(
+                    Icons.assistant_outlined,
+                    color: JarvisTheme.cyanAccent,
+                    size: 22,
+                  ),
+                  tooltip: 'System Assistant Setup',
+                ),
+              ],
               if (onSettingsTap != null) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
                 IconButton(
                   onPressed: onSettingsTap,
                   icon: const Icon(
