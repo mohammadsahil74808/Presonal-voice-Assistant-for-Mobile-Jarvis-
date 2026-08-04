@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'gemini_config.dart';
 import 'secure_storage_service.dart';
 
@@ -18,12 +19,18 @@ class GeminiConfigService extends ChangeNotifier {
   /// Checks whether a valid API key is currently available
   bool get hasApiKey => _config.apiKey.trim().isNotEmpty;
 
-  /// Initializes configuration by retrieving securely stored API keys
+  /// Initializes configuration by retrieving securely stored API keys or falling back to .env
   Future<void> initialize() async {
     final storedKey = await _storage.getGeminiApiKey();
     if (storedKey != null && storedKey.trim().isNotEmpty) {
       _config = _config.copyWith(apiKey: storedKey.trim());
       notifyListeners();
+    } else {
+      final envKey = dotenv.env['GEMINI_API_KEY'];
+      if (envKey != null && envKey.trim().isNotEmpty) {
+        _config = _config.copyWith(apiKey: envKey.trim());
+        notifyListeners();
+      }
     }
   }
 
