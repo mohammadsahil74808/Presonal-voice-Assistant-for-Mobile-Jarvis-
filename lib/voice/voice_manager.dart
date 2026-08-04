@@ -12,6 +12,8 @@ import 'speech_recognizer_service.dart';
 import 'tts_service.dart';
 import 'wake_word_detector.dart';
 
+import '../system_assistant/system_assistant_controller.dart';
+
 /// Central Voice Assistant Orchestrator (STT + Gemini AI + TTS + ConversationManager + Permissions)
 class VoiceManager extends ChangeNotifier {
   final SpeechRecognizerService _speechRecognizer;
@@ -21,9 +23,9 @@ class VoiceManager extends ChangeNotifier {
   final SecureStorageService _secureStorage;
   final ConversationManager _conversationManager;
   final GeminiConfigService _configService;
+  SystemAssistantController? _systemAssistantController;
 
   AIProvider? _aiProvider;
-
   AssistantState _state = AssistantState.idle;
   String _partialTranscript = '';
   String _lastUserMessage = '';
@@ -35,6 +37,7 @@ class VoiceManager extends ChangeNotifier {
   String get lastUserMessage => _lastUserMessage;
   String get errorMessage => _errorMessage;
   bool get hasApiKey => _hasApiKey;
+  SystemAssistantController? get systemAssistantController => _systemAssistantController;
   List<Map<String, String>> get conversationHistory => _conversationManager.historyMaps;
 
   VoiceManager({
@@ -57,6 +60,10 @@ class VoiceManager extends ChangeNotifier {
 
   Future<void> _init() async {
     await ServiceLocator.instance.initialize();
+    _systemAssistantController = SystemAssistantController(
+      voiceManager: this,
+      systemService: ServiceLocator.instance.systemAssistantService,
+    );
     await _speechRecognizer.initialize(
       onError: (err) => _handleError(err),
     );

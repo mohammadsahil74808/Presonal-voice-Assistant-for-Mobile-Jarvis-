@@ -28,13 +28,13 @@ class JarvisVoiceConfig {
   });
 
   // Recommended Neural Male Voice Presets
-  static const String defaultVoice = 'en-IN-PrabhatNeural';
-  static const String indianWavenetMale = 'en-IN-Wavenet-B';
-  static const String hindiNeuralMale = 'hi-IN-MadhurNeural';
-  static const String inMaleVoice = 'en-IN-PrabhatNeural';
+  static const String defaultVoice = 'hi-IN-MadhurNeural'; // Madhur: Premier Deep Indian Male Neural Voice
+  static const String indianEnglishMale = 'en-IN-PrabhatNeural';
+  static const String movieJarvisMale = 'en-GB-RyanNeural';
+  static const String usJarvisMale = 'en-US-ChristopherNeural';
 
-  static const String defaultLanguage = 'en-IN';
-  static const String defaultRate = '+12%';
+  static const String defaultLanguage = 'hi-IN';
+  static const String defaultRate = '+10%';
   static const String defaultPitch = '0Hz';
   static const String defaultVolume = '+0%';
 
