@@ -26,6 +26,9 @@ class MainActivity : FlutterActivity() {
             }
         }
 
+        // Handle power button long-press or assistant gesture action
+        handleAssistantIntent(intent)
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "checkOverlayPermission" -> {
@@ -103,6 +106,19 @@ class MainActivity : FlutterActivity() {
                     result.notImplemented()
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleAssistantIntent(intent)
+    }
+
+    private fun handleAssistantIntent(intent: Intent?) {
+        if (intent?.action == Intent.ACTION_ASSIST || intent?.action == Intent.ACTION_VOICE_COMMAND || intent?.getBooleanExtra("trigger_overlay", false) == true) {
+            overlayWindow?.showOverlay()
+            overlayWindow?.updateState("listening", "Listening...")
+            moveTaskToBack(true)
         }
     }
 }
