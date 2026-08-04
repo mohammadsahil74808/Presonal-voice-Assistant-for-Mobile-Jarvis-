@@ -50,6 +50,28 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
 
+                "openDefaultAssistantSettings" -> {
+                    try {
+                        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            Intent(Settings.ACTION_VOICE_INPUT_SETTINGS).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                        } else {
+                            Intent(Settings.ACTION_SETTINGS).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                        }
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        val intent = Intent(Settings.ACTION_SETTINGS).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        startActivity(intent)
+                        result.success(true)
+                    }
+                }
+
                 "startForegroundService" -> {
                     JarvisForegroundService.startService(context)
                     result.success(true)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../system_assistant/system_assistant_platform.dart';
 
-/// User-friendly dialog guiding the user to grant Android "Display over other apps" permission.
+/// User-friendly dialog guiding the user to grant Android "Display over other apps" permission and set Default Digital Assistant App.
 class OverlayPermissionDialog extends StatelessWidget {
   final VoidCallback onOpenSettings;
 
@@ -19,22 +20,34 @@ class OverlayPermissionDialog extends StatelessWidget {
       ),
       title: Row(
         children: const [
-          Icon(Icons.layers, color: Color(0xFF00E5FF)),
+          Icon(Icons.assistant, color: Color(0xFF00E5FF)),
           SizedBox(width: 10),
           Text(
-            'Enable System Overlay',
+            'System Assistant Setup',
             style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ],
       ),
       content: const Text(
-        'JARVIS requires permission to display the assistant overlay over other applications so you can invoke "Hey JARVIS" while using WhatsApp, Chrome, or YouTube.',
+        'To activate JARVIS like Google Assistant or Siri over WhatsApp, Chrome, or YouTube:\n\n1. Grant "Display over other apps" permission.\n2. Set JARVIS as your phone\'s Default Digital Assistant App in Settings.',
         style: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+        ),
+        OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFF00E5FF),
+            side: const BorderSide(color: Color(0xFF00E5FF)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          onPressed: () {
+            Navigator.of(context).pop();
+            SystemAssistantPlatform.openDefaultAssistantSettings();
+          },
+          child: const Text('Set Default Assistant'),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
@@ -46,7 +59,7 @@ class OverlayPermissionDialog extends StatelessWidget {
             Navigator.of(context).pop();
             onOpenSettings();
           },
-          child: const Text('Open Settings', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: const Text('Display Over Apps', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       ],
     );

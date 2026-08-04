@@ -27,6 +27,17 @@ class SystemAssistantPlatform {
     }
   }
 
+  /// Opens Android Assist & Voice Input Settings screen so user can select JARVIS as default digital assistant app.
+  static Future<bool> openDefaultAssistantSettings() async {
+    try {
+      final bool ok = await _channel.invokeMethod('openDefaultAssistantSettings');
+      return ok;
+    } catch (e) {
+      debugPrint('Error opening default assistant settings: $e');
+      return false;
+    }
+  }
+
   /// Starts Android Foreground Service with microphone type and notification channel.
   static Future<bool> startForegroundService() async {
     try {
