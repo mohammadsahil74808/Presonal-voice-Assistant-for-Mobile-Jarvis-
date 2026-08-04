@@ -81,6 +81,13 @@ class SystemAssistantService extends ChangeNotifier {
     }
   }
 
+  /// Updates live microphone volume level (0.0 to 1.0) on the overlay window.
+  Future<void> updateAudioAmplitude(double amplitude) async {
+    if (_isOverlayVisible) {
+      await SystemAssistantPlatform.updateAudioAmplitude(amplitude);
+    }
+  }
+
   /// Hides floating overlay window.
   Future<void> hideOverlay() async {
     if (_isOverlayVisible) {
@@ -89,5 +96,18 @@ class SystemAssistantService extends ChangeNotifier {
       _currentOverlayState = 'idle';
       notifyListeners();
     }
+  }
+
+  VoidCallback? _onTriggerCallback;
+
+  /// Sets up trigger listener for background Hey JARVIS wake word or hardware button invocation.
+  void setTriggerCallback(VoidCallback callback) {
+    _onTriggerCallback = callback;
+    SystemAssistantPlatform.registerTriggerHandler(() {
+      debugPrint('SystemAssistantService: Received native hardware button or wake word trigger!');
+      if (_onTriggerCallback != null) {
+        _onTriggerCallback!();
+      }
+    });
   }
 }

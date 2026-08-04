@@ -60,6 +60,24 @@ class SystemAssistantPlatform {
     }
   }
 
+  /// Pauses native background wake word listener to free microphone for active conversation.
+  static Future<void> pauseWakeWord() async {
+    try {
+      await _channel.invokeMethod('pauseWakeWord');
+    } catch (e) {
+      debugPrint('Error pausing wake word: $e');
+    }
+  }
+
+  /// Resumes native background wake word listener after conversation returns to idle.
+  static Future<void> resumeWakeWord() async {
+    try {
+      await _channel.invokeMethod('resumeWakeWord');
+    } catch (e) {
+      debugPrint('Error resuming wake word: $e');
+    }
+  }
+
   /// Displays compact bottom-centered translucent floating overlay over active external applications.
   static Future<bool> showOverlayWindow() async {
     try {
@@ -85,7 +103,18 @@ class SystemAssistantPlatform {
     }
   }
 
-  /// Dismisses floating overlay window.
+  /// Updates overlay audio volume level (0.0 - 1.0) for live soundwave reactivity.
+  static Future<void> updateAudioAmplitude(double amplitude) async {
+    try {
+      await _channel.invokeMethod('updateAudioAmplitude', {
+        'amplitude': amplitude,
+      });
+    } catch (e) {
+      debugPrint('Error updating audio amplitude: $e');
+    }
+  }
+
+  /// Hides floating overlay window.
   static Future<bool> hideOverlayWindow() async {
     try {
       final bool ok = await _channel.invokeMethod('hideOverlayWindow');
@@ -94,5 +123,14 @@ class SystemAssistantPlatform {
       debugPrint('Error hiding overlay window: $e');
       return false;
     }
+  }
+
+  /// Registers a callback handler for when Android native wake word or power button triggers JARVIS.
+  static void registerTriggerHandler(VoidCallback onTriggered) {
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'onAssistantTriggered') {
+        onTriggered();
+      }
+    });
   }
 }

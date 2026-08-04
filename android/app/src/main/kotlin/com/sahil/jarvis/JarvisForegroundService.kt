@@ -18,6 +18,8 @@ class JarvisForegroundService : Service() {
         const val NOTIFICATION_ID = 1001
         const val ACTION_START = "ACTION_START_JARVIS_SERVICE"
         const val ACTION_STOP = "ACTION_STOP_JARVIS_SERVICE"
+        const val ACTION_PAUSE_WAKE_WORD = "ACTION_PAUSE_WAKE_WORD"
+        const val ACTION_RESUME_WAKE_WORD = "ACTION_RESUME_WAKE_WORD"
 
         fun startService(context: Context) {
             val intent = Intent(context, JarvisForegroundService::class.java).apply {
@@ -36,22 +38,38 @@ class JarvisForegroundService : Service() {
             }
             context.stopService(intent)
         }
+
+        fun pauseWakeWord(context: Context) {
+            val intent = Intent(context, JarvisForegroundService::class.java).apply {
+                action = ACTION_PAUSE_WAKE_WORD
+            }
+            context.startService(intent)
+        }
+
+        fun resumeWakeWord(context: Context) {
+            val intent = Intent(context, JarvisForegroundService::class.java).apply {
+                action = ACTION_RESUME_WAKE_WORD
+            }
+            context.startService(intent)
+        }
     }
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        startForeground(NOTIFICATION_ID, createNotification())
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP) {
-            stopForeground(true)
-            stopSelf()
-            return START_NOT_STICKY
+        when (intent?.action) {
+            ACTION_STOP -> {
+                stopForeground(true)
+                stopSelf()
+                return START_NOT_STICKY
+            }
         }
 
-        val notification = createNotification()
-        startForeground(NOTIFICATION_ID, notification)
+        startForeground(NOTIFICATION_ID, createNotification())
         return START_STICKY
     }
 
@@ -64,10 +82,11 @@ class JarvisForegroundService : Service() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "JARVIS System Assistant",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "Keeps JARVIS voice assistant ready for system-wide background invocation."
-                setShowBadge(false)
+                description = "Keeps JARVIS assistant ready for system-wide power button and gesture invocation."
+                setShowBadge(true)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
@@ -88,10 +107,11 @@ class JarvisForegroundService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("JARVIS Assistant Active")
-            .setContentText("Tap to activate JARVIS Siri-style overlay anywhere")
+            .setContentText("Tap or hold Power Button to invoke Mini JARVIS")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentIntent(pendingIntent)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setOngoing(true)
             .build()
     }

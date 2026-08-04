@@ -44,10 +44,11 @@ class SpeechRecognizerService {
     return _isInitialized;
   }
 
-  /// Starts listening for voice input.
+  /// Starts listening for voice input with extended conversational timeouts.
   Future<void> startListening({
     required Function(String transcript, bool isFinal) onResult,
     required Function(String error) onError,
+    Function(double level)? onSoundLevelChange,
     String languageCode = 'en_IN',
   }) async {
     if (!_isInitialized) {
@@ -67,13 +68,14 @@ class SpeechRecognizerService {
         onResult: (SpeechRecognitionResult result) {
           onResult(result.recognizedWords, result.finalResult);
         },
+        onSoundLevelChange: onSoundLevelChange,
         listenOptions: SpeechListenOptions(
           partialResults: true,
           cancelOnError: false,
-          listenMode: ListenMode.confirmation,
+          listenMode: ListenMode.dictation, // Dictation mode allows natural continuous speech
           localeId: languageCode,
-          listenFor: const Duration(seconds: 30),
-          pauseFor: const Duration(milliseconds: 1000),
+          listenFor: const Duration(seconds: 45), // Up to 45 seconds of continuous voice session
+          pauseFor: const Duration(seconds: 5),  // 5 full seconds of pause allowed before concluding speech
         ),
       );
     } catch (e) {

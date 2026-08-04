@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/jarvis_theme.dart';
 
 class ChatBubble extends StatelessWidget {
@@ -15,6 +16,14 @@ class ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cardColor = isUser
+        ? JarvisTheme.blueAccent.withValues(alpha: 0.15)
+        : JarvisTheme.cardDark.withValues(alpha: 0.85);
+
+    final borderColor = isUser
+        ? JarvisTheme.blueAccent.withValues(alpha: 0.45)
+        : JarvisTheme.cyanAccent.withValues(alpha: 0.3);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 16.0),
       child: Row(
@@ -22,58 +31,90 @@ class ChatBubble extends StatelessWidget {
             isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!isUser) _buildAvatar(),
+          if (!isUser) _buildJarvisAvatar(),
           const SizedBox(width: 10),
           Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isUser
-                    ? JarvisTheme.blueAccent.withValues(alpha: 0.18)
-                    : JarvisTheme.cardDark,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(18),
-                  topRight: const Radius.circular(18),
-                  bottomLeft: Radius.circular(isUser ? 18 : 4),
-                  bottomRight: Radius.circular(isUser ? 4 : 18),
-                ),
-                border: Border.all(
-                  color: isUser
-                      ? JarvisTheme.blueAccent.withValues(alpha: 0.4)
-                      : JarvisTheme.cyanAccent.withValues(alpha: 0.2),
-                  width: 1.0,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    sender.toUpperCase(),
-                    style: TextStyle(
-                      color: isUser ? JarvisTheme.textMuted : JarvisTheme.cyanAccent,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
+            child: GestureDetector(
+              onLongPress: () {
+                Clipboard.setData(ClipboardData(text: message));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Message copied to clipboard, Sir.'),
+                    duration: const Duration(seconds: 1),
+                    backgroundColor: JarvisTheme.cardDark,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      side: BorderSide(
+                        color: JarvisTheme.cyanAccent.withValues(alpha: 0.3),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    message,
-                    style: TextStyle(
-                      color: isUser ? JarvisTheme.textPrimary : JarvisTheme.textPrimary,
-                      fontSize: 14,
-                      height: 1.4,
-                      letterSpacing: 0.2,
-                    ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(20),
+                    topRight: const Radius.circular(20),
+                    bottomLeft: Radius.circular(isUser ? 20 : 4),
+                    bottomRight: Radius.circular(isUser ? 4 : 20),
                   ),
-                ],
+                  border: Border.all(
+                    color: borderColor,
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                    if (!isUser)
+                      BoxShadow(
+                        color: JarvisTheme.cyanAccent.withValues(alpha: 0.05),
+                        blurRadius: 14,
+                        spreadRadius: 1,
+                      ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isUser ? Icons.person_outline_rounded : Icons.bolt_rounded,
+                          size: 12,
+                          color: isUser ? JarvisTheme.textMuted : JarvisTheme.cyanAccent,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          sender.toUpperCase(),
+                          style: TextStyle(
+                            color: isUser ? JarvisTheme.textMuted : JarvisTheme.cyanAccent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    SelectableText(
+                      message,
+                      style: const TextStyle(
+                        color: JarvisTheme.textPrimary,
+                        fontSize: 13.5,
+                        height: 1.45,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -84,7 +125,7 @@ class ChatBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar() {
+  Widget _buildJarvisAvatar() {
     return Container(
       width: 32,
       height: 32,
@@ -92,9 +133,16 @@ class ChatBubble extends StatelessWidget {
         shape: BoxShape.circle,
         color: JarvisTheme.cyanAccent.withValues(alpha: 0.15),
         border: Border.all(
-          color: JarvisTheme.cyanAccent.withValues(alpha: 0.4),
-          width: 1.0,
+          color: JarvisTheme.cyanAccent.withValues(alpha: 0.5),
+          width: 1.2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: JarvisTheme.cyanAccent.withValues(alpha: 0.2),
+            blurRadius: 8,
+            spreadRadius: 1,
+          ),
+        ],
       ),
       child: const Icon(
         Icons.graphic_eq_rounded,
@@ -112,8 +160,8 @@ class ChatBubble extends StatelessWidget {
         shape: BoxShape.circle,
         color: JarvisTheme.blueAccent.withValues(alpha: 0.15),
         border: Border.all(
-          color: JarvisTheme.blueAccent.withValues(alpha: 0.4),
-          width: 1.0,
+          color: JarvisTheme.blueAccent.withValues(alpha: 0.5),
+          width: 1.2,
         ),
       ),
       child: const Icon(

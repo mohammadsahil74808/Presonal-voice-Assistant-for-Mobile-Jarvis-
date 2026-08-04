@@ -59,48 +59,76 @@ class _ModernVoiceBarState extends State<ModernVoiceBar> {
     final isListening = widget.state == AssistantState.listening;
     final isProcessing = widget.state == AssistantState.processing;
 
+    final activeColor = isListening
+        ? JarvisTheme.cyanAccent
+        : isProcessing
+            ? JarvisTheme.amberWarning
+            : JarvisTheme.cyanAccent;
+
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+      margin: const EdgeInsets.fromLTRB(16, 6, 16, 16),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: JarvisTheme.cardDark,
+        color: JarvisTheme.cardDark.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(32),
         border: Border.all(
           color: isListening
               ? JarvisTheme.cyanAccent
               : isProcessing
                   ? JarvisTheme.amberWarning
-                  : JarvisTheme.cyanAccent.withValues(alpha: 0.25),
-          width: isListening ? 1.5 : 1.0,
+                  : JarvisTheme.cyanAccent.withValues(alpha: 0.28),
+          width: isListening ? 1.6 : 1.2,
         ),
         boxShadow: [
           BoxShadow(
             color: isListening
-                ? JarvisTheme.cyanAccent.withValues(alpha: 0.25)
-                : Colors.black.withValues(alpha: 0.3),
-            blurRadius: 16,
+                ? JarvisTheme.cyanAccent.withValues(alpha: 0.28)
+                : Colors.black.withValues(alpha: 0.35),
+            blurRadius: 18,
             spreadRadius: isListening ? 2 : 0,
           ),
         ],
       ),
       child: Row(
         children: [
-          // Text Input or Live Voice Transcript Area
+          // Voice Wave or Text Input
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: isListening
-                  ? Text(
-                      widget.partialTranscript.isEmpty
-                          ? "Listening... Speak naturally, Sir"
-                          : widget.partialTranscript,
-                      style: const TextStyle(
-                        color: JarvisTheme.textPrimary,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                  ? Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: JarvisTheme.cyanAccent,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: JarvisTheme.cyanAccent.withValues(alpha: 0.8),
+                                blurRadius: 6,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            widget.partialTranscript.isEmpty
+                                ? "Listening... Speak naturally, Sir"
+                                : widget.partialTranscript,
+                            style: const TextStyle(
+                              color: JarvisTheme.textPrimary,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     )
                   : TextField(
                       controller: _textController,
@@ -110,10 +138,10 @@ class _ModernVoiceBarState extends State<ModernVoiceBar> {
                       ),
                       decoration: InputDecoration(
                         hintText: isProcessing
-                            ? "Processing input..."
-                            : "Type a command or tap mic, Sir...",
-                        hintStyle: const TextStyle(
-                          color: JarvisTheme.textSecondary,
+                            ? "Processing request..."
+                            : "Ask JARVIS or tap microphone...",
+                        hintStyle: TextStyle(
+                          color: JarvisTheme.textSecondary.withValues(alpha: 0.7),
                           fontSize: 13.5,
                         ),
                         border: InputBorder.none,
@@ -132,8 +160,11 @@ class _ModernVoiceBarState extends State<ModernVoiceBar> {
           if (isListening && widget.onCancelTap != null)
             IconButton(
               onPressed: widget.onCancelTap,
-              icon: const Icon(Icons.close_rounded,
-                  color: JarvisTheme.textMuted, size: 20),
+              icon: const Icon(
+                Icons.close_rounded,
+                color: JarvisTheme.textMuted,
+                size: 20,
+              ),
               tooltip: 'Cancel recording',
             ),
 
@@ -156,14 +187,14 @@ class _ModernVoiceBarState extends State<ModernVoiceBar> {
                 border: Border.all(
                   color: (_hasText || isListening)
                       ? Colors.white
-                      : JarvisTheme.cyanAccent.withValues(alpha: 0.5),
+                      : activeColor.withValues(alpha: 0.5),
                   width: 1.5,
                 ),
                 boxShadow: (_hasText || isListening)
                     ? [
                         BoxShadow(
-                          color: JarvisTheme.cyanAccent.withValues(alpha: 0.5),
-                          blurRadius: 10,
+                          color: activeColor.withValues(alpha: 0.5),
+                          blurRadius: 12,
                           spreadRadius: 1,
                         ),
                       ]
@@ -179,7 +210,7 @@ class _ModernVoiceBarState extends State<ModernVoiceBar> {
                             : Icons.mic_none_rounded,
                 color: (_hasText || isListening)
                     ? Colors.black
-                    : JarvisTheme.cyanAccent,
+                    : activeColor,
                 size: 20,
               ),
             ),

@@ -11,10 +11,13 @@ import '../services/service_locator.dart';
 import 'speech_recognizer_service.dart';
 import 'tts_service.dart';
 import 'wake_word_detector.dart';
+import 'audio_level_controller.dart';
+import 'speech_animation_controller.dart';
 
 import '../system_assistant/system_assistant_controller.dart';
+import '../system_assistant/system_assistant_platform.dart';
 
-/// Central Voice Assistant Orchestrator (STT + Gemini AI + TTS + ConversationManager + Permissions)
+/// Central Voice Assistant Orchestrator (STT + Gemini AI + TTS + ConversationManager + Permissions + Audio Reactivity)
 class VoiceManager extends ChangeNotifier {
   final SpeechRecognizerService _speechRecognizer;
   final TTSService _ttsService;
@@ -24,6 +27,9 @@ class VoiceManager extends ChangeNotifier {
   final ConversationManager _conversationManager;
   final GeminiConfigService _configService;
   SystemAssistantController? _systemAssistantController;
+
+  final AudioLevelController audioLevelController = AudioLevelController();
+  final SpeechAnimationController speechAnimationController = SpeechAnimationController();
 
   AIProvider? _aiProvider;
   AssistantState _state = AssistantState.idle;
@@ -39,6 +45,16 @@ class VoiceManager extends ChangeNotifier {
   bool get hasApiKey => _hasApiKey;
   SystemAssistantController? get systemAssistantController => _systemAssistantController;
   List<Map<String, String>> get conversationHistory => _conversationManager.historyMaps;
+
+  /// Normalized audio amplitude between 0.0 and 1.0 for UI animations (listening microphone volume or TTS speech animation).
+  double get currentAmplitude {
+    if (_state == AssistantState.listening) {
+      return audioLevelController.amplitude;
+    } else if (_state == AssistantState.speaking) {
+      return speechAnimationController.amplitude;
+    }
+    return 0.0;
+  }
 
   VoiceManager({
     SpeechRecognizerService? speechRecognizer,
@@ -66,8 +82,21 @@ class VoiceManager extends ChangeNotifier {
     );
     await _speechRecognizer.initialize(
       onError: (err) => _handleError(err),
+      onStatus: (status) {
+        if ((status == 'done' || status == 'notListening') && _state == AssistantState.listening) {
+          if (_partialTranscript.trim().isNotEmpty) {
+            _processFinalSpeech(_partialTranscript);
+          } else {
+            _state = AssistantState.idle;
+            SystemAssistantPlatform.resumeWakeWord();
+            notifyListeners();
+          }
+        }
+      },
     );
     _conversationManager.addListener(notifyListeners);
+    audioLevelController.addListener(notifyListeners);
+    speechAnimationController.addListener(notifyListeners);
     await checkAndLoadApiKey();
   }
 
@@ -98,17 +127,17 @@ class VoiceManager extends ChangeNotifier {
   }
 
   /// Removes stored API key securely.
-  Future<void> clearApiKey() async {
+  Future<void> deleteApiKey() async {
     await _secureStorage.deleteGeminiApiKey();
-    await checkAndLoadApiKey();
+    _aiProvider = null;
+    _hasApiKey = false;
+    notifyListeners();
   }
 
-  /// Toggles voice listening session. If speaking, interrupts TTS instantly and starts listening.
-  Future<void> toggleListening() async {
-    if (_state == AssistantState.speaking || _ttsService.isSpeaking) {
-      await _ttsService.stop();
-    }
+  Future<void> clearApiKey() async => await deleteApiKey();
 
+  /// Toggles active speech recognition listening session on or off.
+  Future<void> toggleListening() async {
     if (_state == AssistantState.listening) {
       await stopListening();
     } else {
@@ -116,17 +145,20 @@ class VoiceManager extends ChangeNotifier {
     }
   }
 
-  /// Starts listening for voice commands with interruption capability.
+  /// Starts interactive voice listening session with microphone permission validation and real-time audio reactivity.
   Future<void> startListening() async {
-    // If speaking, interrupt TTS immediately (Voice Interruption Requirement)
-    if (_ttsService.isSpeaking || _state == AssistantState.speaking) {
+    // Pause background wake word listener to free microphone for active conversation session
+    await SystemAssistantPlatform.pauseWakeWord();
+
+    if (_state == AssistantState.speaking || _ttsService.isSpeaking) {
+      speechAnimationController.stopAnimation();
       await _ttsService.stop();
     }
 
-    final hasPerm = await _permissionManager.hasMicrophonePermission();
-    if (!hasPerm) {
-      final granted = await _permissionManager.requestMicrophonePermission();
-      if (!granted) {
+    bool hasMicPermission = await _permissionManager.hasMicrophonePermission();
+    if (!hasMicPermission) {
+      hasMicPermission = await _permissionManager.requestMicrophonePermission();
+      if (!hasMicPermission) {
         _handleError(
           'Microphone permission is required to speak with JARVIS, Sir. Please grant access in settings.',
         );
@@ -142,10 +174,14 @@ class VoiceManager extends ChangeNotifier {
     _errorMessage = '';
     _partialTranscript = '';
     _state = AssistantState.listening;
+    audioLevelController.reset();
     notifyListeners();
 
     await _speechRecognizer.startListening(
       languageCode: 'en_IN',
+      onSoundLevelChange: (level) {
+        audioLevelController.updateLevel(level);
+      },
       onResult: (transcript, isFinal) {
         _partialTranscript = transcript;
         notifyListeners();
@@ -162,33 +198,39 @@ class VoiceManager extends ChangeNotifier {
 
   /// Stops listening session and evaluates partial transcript if present.
   Future<void> stopListening() async {
+    audioLevelController.reset();
     await _speechRecognizer.stopListening();
     if (_partialTranscript.isNotEmpty && _state == AssistantState.listening) {
       _processFinalSpeech(_partialTranscript);
     } else {
       _state = AssistantState.idle;
+      await SystemAssistantPlatform.resumeWakeWord();
       notifyListeners();
     }
   }
 
-  /// Cancels active listening or speech sessions without sending queries.
+  /// Cancels active listening session without preserving partial transcript.
   Future<void> cancelListening() async {
+    audioLevelController.reset();
+    speechAnimationController.stopAnimation();
     await _speechRecognizer.cancelListening();
     await _ttsService.stop();
     _partialTranscript = '';
     _state = AssistantState.idle;
+    await SystemAssistantPlatform.resumeWakeWord();
     notifyListeners();
   }
 
   /// Processes finalized speech input through Gemini AI and speaks the response via TTS.
   Future<void> _processFinalSpeech(String rawSpeech) async {
-    // Ensure speech recognition stops before entering processing loop (Audio Feedback Protection)
+    audioLevelController.reset();
     await _speechRecognizer.stopListening();
 
     final cleanedCommand = _wakeWordDetector.cleanCommandPrefix(rawSpeech);
     final finalClean = ConversationManager.cleanWakePhrase(cleanedCommand);
     if (finalClean.trim().isEmpty) {
       _state = AssistantState.idle;
+      await SystemAssistantPlatform.resumeWakeWord();
       notifyListeners();
       return;
     }
@@ -204,10 +246,14 @@ class VoiceManager extends ChangeNotifier {
       return;
     }
 
+    await SystemAssistantPlatform.pauseWakeWord();
+
     if (_state == AssistantState.speaking || _ttsService.isSpeaking) {
+      speechAnimationController.stopAnimation();
       await _ttsService.stop();
     }
     if (_state == AssistantState.listening) {
+      audioLevelController.reset();
       await _speechRecognizer.cancelListening();
     }
 
@@ -217,6 +263,7 @@ class VoiceManager extends ChangeNotifier {
   /// Low-Latency Real-Time Streaming Pipeline with audio feedback protection and chunked sentence speech.
   Future<void> _generateAndSpeakResponse(String userCommand, {bool isFromSpeech = false}) async {
     if (isFromSpeech) {
+      audioLevelController.reset();
       await _speechRecognizer.stopListening();
     }
 
@@ -272,10 +319,12 @@ class VoiceManager extends ChangeNotifier {
               sentenceToSpeak,
               onStart: () {
                 _state = AssistantState.speaking;
+                speechAnimationController.startAnimation();
                 notifyListeners();
               },
               onComplete: () {
                 if (streamCompleted && !_ttsService.isSpeaking) {
+                  speechAnimationController.stopAnimation();
                   _scheduleWakePhraseRecovery();
                 }
               },
@@ -295,16 +344,20 @@ class VoiceManager extends ChangeNotifier {
           finalLeftover,
           onStart: () {
             _state = AssistantState.speaking;
+            speechAnimationController.startAnimation();
             notifyListeners();
           },
           onComplete: () {
+            speechAnimationController.stopAnimation();
             _scheduleWakePhraseRecovery();
           },
         );
       } else if (!startedSpeaking || !_ttsService.isSpeaking) {
+        speechAnimationController.stopAnimation();
         _scheduleWakePhraseRecovery();
       }
     } catch (e) {
+      speechAnimationController.stopAnimation();
       _handleError(e.toString().replaceAll('Exception: ', ''));
     }
   }
@@ -313,7 +366,9 @@ class VoiceManager extends ChangeNotifier {
   void _scheduleWakePhraseRecovery() {
     Future.delayed(const Duration(milliseconds: 350), () {
       if (!_ttsService.isSpeaking && (_state == AssistantState.speaking || _state == AssistantState.processing)) {
+        speechAnimationController.stopAnimation();
         _state = AssistantState.idle;
+        SystemAssistantPlatform.resumeWakeWord();
         notifyListeners();
       }
     });
@@ -333,27 +388,36 @@ class VoiceManager extends ChangeNotifier {
 
   /// Clears the active error status and returns assistant state to idle.
   void clearError() {
+    audioLevelController.reset();
+    speechAnimationController.stopAnimation();
     _errorMessage = '';
     _state = AssistantState.idle;
+    SystemAssistantPlatform.resumeWakeWord();
     notifyListeners();
   }
 
   void _handleError(String message) {
+    audioLevelController.reset();
+    speechAnimationController.stopAnimation();
     final lower = message.toLowerCase();
     // Ignore benign Android STT timeout / no match notifications
     if (lower.contains('no_match') ||
         lower.contains('error_no_match') ||
         lower.contains('timeout') ||
         lower.contains('error_speech_timeout') ||
+        lower.contains('error_busy') ||
+        lower.contains('error_recognizer_busy') ||
         lower.contains('error_client')) {
       _state = AssistantState.idle;
       _errorMessage = '';
+      SystemAssistantPlatform.resumeWakeWord();
       notifyListeners();
       return;
     }
 
     _errorMessage = message;
     _state = AssistantState.error;
+    SystemAssistantPlatform.resumeWakeWord();
     notifyListeners();
   }
 
@@ -364,6 +428,10 @@ class VoiceManager extends ChangeNotifier {
   @override
   void dispose() {
     _conversationManager.removeListener(notifyListeners);
+    audioLevelController.removeListener(notifyListeners);
+    speechAnimationController.removeListener(notifyListeners);
+    audioLevelController.dispose();
+    speechAnimationController.dispose();
     _speechRecognizer.cancelListening();
     _ttsService.dispose();
     super.dispose();

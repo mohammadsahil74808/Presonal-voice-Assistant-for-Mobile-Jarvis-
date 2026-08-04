@@ -21,81 +21,118 @@ class HeaderWidget extends StatelessWidget {
 
     switch (state) {
       case AssistantState.idle:
-        statusText = '● READY';
+        statusText = 'READY';
         statusColor = JarvisTheme.cyanAccent;
         break;
       case AssistantState.listening:
-        statusText = '● LISTENING';
+        statusText = 'LISTENING';
         statusColor = JarvisTheme.cyanAccent;
         break;
       case AssistantState.processing:
-        statusText = '● PROCESSING';
+        statusText = 'PROCESSING';
         statusColor = JarvisTheme.amberWarning;
         break;
       case AssistantState.speaking:
-        statusText = '● SPEAKING';
+        statusText = 'SPEAKING';
         statusColor = JarvisTheme.blueAccent;
         break;
       case AssistantState.error:
-        statusText = '● OFFLINE / ERROR';
+        statusText = 'OFFLINE';
         statusColor = JarvisTheme.redError;
         break;
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      decoration: BoxDecoration(
+        color: JarvisTheme.cardDark.withValues(alpha: 0.4),
+        border: Border(
+          bottom: BorderSide(
+            color: JarvisTheme.cyanAccent.withValues(alpha: 0.12),
+            width: 1.0,
+          ),
+        ),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
+          // Left Side: Brand & Telemetry Subtitle
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: statusColor.withValues(alpha: 0.8),
-                      blurRadius: 6,
-                      spreadRadius: 2,
+              Row(
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: statusColor.withValues(alpha: 0.8),
+                          blurRadius: 6,
+                          spreadRadius: 2,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'JARVIS',
+                    style: TextStyle(
+                      color: JarvisTheme.textPrimary,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 4.0,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-              const Text(
-                'JARVIS',
-                style: TextStyle(
-                  color: JarvisTheme.textPrimary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 4.0,
-                ),
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  const SizedBox(width: 15),
+                  Text(
+                    'OS v2.5  |  TELEMETRY ONLINE',
+                    style: TextStyle(
+                      color: JarvisTheme.textMuted.withValues(alpha: 0.8),
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
+
+          // Right Side: Status Badge & Action Controls
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: statusColor.withValues(alpha: 0.3),
+                    color: statusColor.withValues(alpha: 0.35),
                     width: 1,
                   ),
                 ),
-                child: Text(
-                  statusText,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.5,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '● $statusText',
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               if (onAssistantSetupTap != null) ...[
@@ -105,13 +142,13 @@ class HeaderWidget extends StatelessWidget {
                   icon: const Icon(
                     Icons.assistant_outlined,
                     color: JarvisTheme.cyanAccent,
-                    size: 22,
+                    size: 20,
                   ),
                   tooltip: 'System Assistant Setup',
                 ),
               ],
               if (onSettingsTap != null) ...[
-                const SizedBox(width: 4),
+                const SizedBox(width: 2),
                 IconButton(
                   onPressed: onSettingsTap,
                   icon: const Icon(

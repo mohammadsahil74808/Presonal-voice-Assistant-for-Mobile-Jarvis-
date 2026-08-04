@@ -52,3 +52,6 @@ app.*.map.json
 .kotlin/
 **/android/.kotlin/
 
+# Temporary directories (AGENTS.md 3-layer architecture)
+.tmp/
+
