@@ -312,12 +312,12 @@ class VoiceManager extends ChangeNotifier {
     });
   }
 
-  /// Helper to find natural sentence breaks only for extended paragraphs (>50 chars), preventing awkward audio stutter or tone resets on full stops in short replies.
+  /// Helper to find natural sentence or clause breaks for lightning-fast streaming audio onset.
   int _findSentenceBreak(String text) {
     for (int i = 0; i < text.length; i++) {
       final char = text[i];
-      // Only slice if buffer has grown beyond 50 characters to preserve continuous human intonation across short sentences
-      if ((char == '.' || char == '!' || char == '?' || char == '\n') && i >= 50) {
+      // Trigger instant speech onset as soon as a clause boundary (, . ! ? \n) appears after 8 characters
+      if ((char == ',' || char == '.' || char == '!' || char == '?' || char == '\n') && i >= 8) {
         return i;
       }
     }
