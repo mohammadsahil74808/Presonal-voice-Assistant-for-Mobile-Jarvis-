@@ -19,8 +19,8 @@ class GeminiProvider implements AIProvider {
 
   GeminiProvider({
     required this.apiKey,
-    this.modelName = 'gemini-3.5-flash-lite',
-    this.deepModelName = 'gemini-3.5-flash',
+    this.modelName = 'gemini-2.0-flash',
+    this.deepModelName = 'gemini-1.5-pro',
   }) {
     _initModel();
   }
@@ -38,7 +38,7 @@ class GeminiProvider implements AIProvider {
       systemInstruction: Content.system(instructions),
     );
     _backupModel = GenerativeModel(
-      model: 'gemini-2.0-flash',
+      model: 'gemini-1.5-flash',
       apiKey: apiKey,
       systemInstruction: Content.system(instructions),
     );

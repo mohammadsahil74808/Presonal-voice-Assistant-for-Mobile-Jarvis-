@@ -34,8 +34,8 @@ class JarvisVoiceConfig {
   static const String inMaleVoice = 'en-IN-PrabhatNeural';
 
   static const String defaultLanguage = 'en-IN';
-  static const String defaultRate = '-4%';
-  static const String defaultPitch = '-2Hz';
+  static const String defaultRate = '+12%';
+  static const String defaultPitch = '0Hz';
   static const String defaultVolume = '+0%';
 
   /// Creates a copy of this configuration with optional overrides.

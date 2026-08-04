@@ -71,8 +71,8 @@ class VoiceManager extends ChangeNotifier {
       key = dotenv.env['GEMINI_API_KEY'];
     }
     if (key != null && key.trim().isNotEmpty && key.trim() != 'YOUR_KEY_HERE') {
-      final model = dotenv.env['GEMINI_MODEL'] ?? 'gemini-3.5-flash-lite';
-      final deepModel = dotenv.env['GEMINI_DEEP_MODEL'] ?? 'gemini-3.5-flash';
+      final model = dotenv.env['GEMINI_MODEL'] ?? 'gemini-2.0-flash';
+      final deepModel = dotenv.env['GEMINI_DEEP_MODEL'] ?? 'gemini-1.5-pro';
       _aiProvider = GeminiProvider(apiKey: key.trim(), modelName: model, deepModelName: deepModel);
       _configService.updateModel(model);
       _hasApiKey = true;

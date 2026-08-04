@@ -70,10 +70,10 @@ class SpeechRecognizerService {
         listenOptions: SpeechListenOptions(
           partialResults: true,
           cancelOnError: false,
-          listenMode: ListenMode.dictation,
+          listenMode: ListenMode.confirmation,
           localeId: languageCode,
           listenFor: const Duration(seconds: 30),
-          pauseFor: const Duration(milliseconds: 2000),
+          pauseFor: const Duration(milliseconds: 1000),
         ),
       );
     } catch (e) {
