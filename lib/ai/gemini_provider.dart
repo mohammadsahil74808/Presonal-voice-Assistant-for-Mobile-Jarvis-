@@ -2,37 +2,68 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'ai_provider.dart';
+import 'jarvis_system_instruction.dart';
 
-/// Gemini AI Provider implementation using official google_generative_ai SDK.
-class GeminiAIProvider implements AIProvider {
-  final String _apiKey;
-  final String _modelName;
-  late final GenerativeModel _model;
+/// Type alias for backward compatibility across modular architectures
+typedef GeminiAIProvider = GeminiProvider;
 
-  static const String systemInstructionText = '''
-You are JARVIS, a highly intelligent, calm, respectful, and technically capable personal AI assistant.
-Key instructions:
-1. Always address the user respectfully as "Sir".
-2. Keep your spoken responses concise, natural, and conversational unless the user asks for deep detail.
-3. You natively support English and Hinglish (natural Hindi-English code-switching).
-4. Be direct and helpful. Avoid robotic filler phrases like "How may I assist you today?" unless contextually ideal.
-5. Do not claim to have performed physical actions unless an actual tool confirmed it.
-''';
+/// Gemini AI Provider implementation with intelligent Dual-Engine Auto-Routing (Flash-Lite for speed, Flash for deep reasoning).
+class GeminiProvider implements AIProvider {
+  final String apiKey;
+  final String modelName;
+  final String deepModelName;
 
-  GeminiAIProvider({
-    required String apiKey,
-    String modelName = 'gemini-1.5-flash',
-  })  : _apiKey = apiKey,
-        _modelName = modelName {
+  late final GenerativeModel _defaultModel; // Fast conversational engine (e.g. gemini-3.5-flash-lite)
+  late final GenerativeModel _deepModel;    // Analytical reasoning engine (e.g. gemini-3.5-flash)
+  late final GenerativeModel _backupModel;  // Stable fallback engine (gemini-2.0-flash)
+
+  GeminiProvider({
+    required this.apiKey,
+    this.modelName = 'gemini-3.5-flash-lite',
+    this.deepModelName = 'gemini-3.5-flash',
+  }) {
     _initModel();
   }
 
   void _initModel() {
-    _model = GenerativeModel(
-      model: _modelName,
-      apiKey: _apiKey,
-      systemInstruction: Content.system(systemInstructionText),
+    final instructions = JarvisSystemInstruction.buildInstruction();
+    _defaultModel = GenerativeModel(
+      model: modelName,
+      apiKey: apiKey,
+      systemInstruction: Content.system(instructions),
     );
+    _deepModel = GenerativeModel(
+      model: deepModelName,
+      apiKey: apiKey,
+      systemInstruction: Content.system(instructions),
+    );
+    _backupModel = GenerativeModel(
+      model: 'gemini-2.0-flash',
+      apiKey: apiKey,
+      systemInstruction: Content.system(instructions),
+    );
+  }
+
+  /// Determines whether a user prompt requires complex analysis/deep reasoning or is a standard conversational query.
+  bool _isDeepReasoningQuery(String message) {
+    final lower = message.toLowerCase();
+
+    // Only route to heavy deep analysis if prompt is very long or explicitly asks for exhaustive essay breakdown
+    if (message.length > 250) return true;
+
+    final deepKeywords = [
+      'explain in deep detail', 'exhaustive essay', 'step by step architecture',
+      'comprehensive comparison', 'detailed technical report', 'deep dive summary'
+    ];
+
+    for (final kw in deepKeywords) {
+      if (lower.contains(kw)) {
+        return true;
+      }
+    }
+
+    // Default to ultra-fast high-speed engines for 99% of conversational queries
+    return false;
   }
 
   @override
@@ -40,36 +71,45 @@ Key instructions:
     String message, {
     List<Map<String, String>>? history,
   }) async {
-    if (_apiKey.trim().isEmpty) {
-      throw Exception('Gemini API key is not configured. Please set your API key in Settings, Sir.');
+    if (apiKey.trim().isEmpty) {
+      return 'Sir, the Gemini API key is not configured. Please set your API key in settings.';
     }
 
-    try {
-      final chatContents = _buildChatContents(message, history);
-      final chat = _model.startChat(history: chatContents.sublist(0, chatContents.length - 1));
-      final response = await chat.sendMessage(chatContents.last).timeout(
-            const Duration(seconds: 20),
-          );
+    final chatContents = _buildChatContents(message, history);
+    final isDeep = _isDeepReasoningQuery(message);
+    // Prioritize ultra-fast stable 2.0-flash immediately if 3.5-flash-lite encounters temporary server traffic load
+    final modelsToTry = isDeep 
+        ? [_deepModel, _defaultModel, _backupModel] 
+        : [_defaultModel, _backupModel, _deepModel];
 
-      final text = response.text;
-      if (text == null || text.trim().isEmpty) {
-        return 'Sir, I received an empty response from Gemini.';
+    String lastError = '';
+    for (final model in modelsToTry) {
+      try {
+        debugPrint('JARVIS Auto-Routing (sendMessage) -> Attempting AI engine...');
+        final chat = model.startChat(history: chatContents.sublist(0, chatContents.length - 1));
+        final response = await chat.sendMessage(chatContents.last).timeout(
+              const Duration(seconds: 12),
+            );
+
+        final text = response.text;
+        if (text != null && text.trim().isNotEmpty) {
+          return text.trim();
+        }
+      } catch (e) {
+        debugPrint('Error with AI engine: $e');
+        lastError = e.toString().toLowerCase();
+        debugPrint('JARVIS Resilience Engine -> Seamlessly switching to backup AI engine...');
       }
-      return text.trim();
-    } on TimeoutException {
-      return 'Sir, the connection to Gemini timed out. Please check your internet connection.';
-    } catch (e) {
-      debugPrint('Gemini Error: $e');
-      final errStr = e.toString().toLowerCase();
-      if (errStr.contains('api_key_invalid') || errStr.contains('invalid api key')) {
-        throw Exception('Invalid Gemini API Key provided. Please update your API Key, Sir.');
-      } else if (errStr.contains('quota') || errStr.contains('429')) {
-        return 'Sir, API rate limit or quota exceeded. Please try again in a moment.';
-      } else if (errStr.contains('socketexception') || errStr.contains('network')) {
-        return "Sir, I can't reach Gemini right now. Please check your internet connection.";
-      }
-      return 'Sir, an error occurred while connecting to Gemini: $e';
     }
+
+    if (lastError.contains('api_key_invalid') || lastError.contains('invalid api key') || lastError.contains('401') || lastError.contains('unauthorized')) {
+      return 'Sir, the provided API key appears to be invalid. Please check your settings.';
+    } else if (lastError.contains('socketexception') || lastError.contains('network') || lastError.contains('timeout') || lastError.contains('connection')) {
+      return "I can't reach Gemini right now, Sir. Please check your internet connection.";
+    } else if (lastError.contains('quota') || lastError.contains('rate limit') || lastError.contains('429')) {
+      return "Sir, our API quota or rate limit has been reached. Please try again shortly.";
+    }
+    return "I can't reach Gemini right now, Sir.";
   }
 
   @override
@@ -77,24 +117,54 @@ Key instructions:
     String message, {
     List<Map<String, String>>? history,
   }) async* {
-    if (_apiKey.trim().isEmpty) {
-      yield 'Gemini API key is not configured. Please set your API key in Settings, Sir.';
+    if (apiKey.trim().isEmpty) {
+      yield 'Sir, the Gemini API key is not configured. Please set your API key in settings.';
       return;
     }
 
-    try {
-      final chatContents = _buildChatContents(message, history);
-      final chat = _model.startChat(history: chatContents.sublist(0, chatContents.length - 1));
-      final responseStream = chat.sendMessageStream(chatContents.last);
+    final chatContents = _buildChatContents(message, history);
+    final isDeep = _isDeepReasoningQuery(message);
+    final modelsToTry = isDeep 
+        ? [_deepModel, _defaultModel, _backupModel] 
+        : [_defaultModel, _backupModel, _deepModel];
 
-      await for (final chunk in responseStream) {
-        if (chunk.text != null) {
-          yield chunk.text!;
+    bool receivedAnyChunk = false;
+    String lastError = '';
+
+    for (final model in modelsToTry) {
+      try {
+        debugPrint('JARVIS Auto-Routing (streamMessage) -> Attempting AI engine...');
+        final chat = model.startChat(history: chatContents.sublist(0, chatContents.length - 1));
+        final responseStream = chat.sendMessageStream(chatContents.last);
+
+        await for (final chunk in responseStream) {
+          if (chunk.text != null && chunk.text!.isNotEmpty) {
+            receivedAnyChunk = true;
+            yield chunk.text!;
+          }
         }
+        if (receivedAnyChunk) return;
+      } catch (e) {
+        debugPrint('Stream Error on AI engine: $e');
+        lastError = e.toString().toLowerCase();
+        if (receivedAnyChunk) {
+          // If stream already started delivering output, do not repeat with another model
+          return;
+        }
+        debugPrint('JARVIS Resilience Engine -> Seamlessly switching to backup AI engine...');
       }
-    } catch (e) {
-      debugPrint('Gemini Stream Error: $e');
-      yield 'Sir, an error occurred while streaming response from Gemini.';
+    }
+
+    if (!receivedAnyChunk) {
+      if (lastError.contains('api_key_invalid') || lastError.contains('invalid api key') || lastError.contains('401')) {
+        yield 'Sir, the provided API key appears to be invalid. Please check your settings.';
+      } else if (lastError.contains('socketexception') || lastError.contains('network') || lastError.contains('connection') || lastError.contains('timeout')) {
+        yield "I can't reach Gemini right now, Sir.";
+      } else if (lastError.contains('quota') || lastError.contains('rate limit') || lastError.contains('429')) {
+        yield "Sir, our API quota or rate limit has been reached. Please try again shortly.";
+      } else {
+        yield "I can't reach Gemini right now, Sir.";
+      }
     }
   }
 
@@ -105,9 +175,9 @@ Key instructions:
     final List<Content> contents = [];
 
     if (history != null && history.isNotEmpty) {
-      // Limit to last 10 turns to keep short-term context lightweight
-      final recent = history.length > 10
-          ? history.sublist(history.length - 10)
+      // Limit to last 8 turns to keep short-term context lightweight and within conversational budget
+      final recent = history.length > 8
+          ? history.sublist(history.length - 8)
           : history;
 
       for (final msg in recent) {

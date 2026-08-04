@@ -172,11 +172,17 @@ class _ConversationalScreenState extends State<ConversationalScreen> {
                         ),
                         TextButton(
                           onPressed: () {
-                            _voiceManager.openAppSettings();
+                            if (_voiceManager.errorMessage.toLowerCase().contains('permission')) {
+                              _voiceManager.openAppSettings();
+                            } else {
+                              _voiceManager.clearError();
+                            }
                           },
-                          child: const Text(
-                            'PERMISSIONS',
-                            style: TextStyle(
+                          child: Text(
+                            _voiceManager.errorMessage.toLowerCase().contains('permission')
+                                ? 'PERMISSIONS'
+                                : 'DISMISS',
+                            style: const TextStyle(
                               color: JarvisTheme.cyanAccent,
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -241,6 +247,13 @@ class _ConversationalScreenState extends State<ConversationalScreen> {
                   },
                   onCancelTap: () {
                     _voiceManager.cancelListening();
+                  },
+                  onSendText: (text) {
+                    if (!_voiceManager.hasApiKey) {
+                      _showApiKeyDialog();
+                    } else {
+                      _voiceManager.sendTextMessage(text);
+                    }
                   },
                 ),
               ],
